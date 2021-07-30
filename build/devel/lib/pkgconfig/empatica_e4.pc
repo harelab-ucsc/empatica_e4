@@ -1,0 +1,8 @@
+prefix=/home/rwilson/catkin_ws/src/empatica_e4/build/devel
+
+Name: empatica_e4
+Description: Description of empatica_e4
+Version: 0.0.0
+Cflags: -I/home/rwilson/catkin_ws/src/empatica_e4/build/devel/include
+Libs: -L${prefix}/lib 
+Requires: rospy std_msgs message_runtime

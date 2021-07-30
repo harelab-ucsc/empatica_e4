@@ -1,0 +1,2 @@
+- setup-file:
+    local-name: /home/rwilson/catkin_ws/src/empatica_e4/build/devel/setup.sh

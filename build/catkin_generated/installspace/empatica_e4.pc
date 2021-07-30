@@ -1,0 +1,8 @@
+prefix=/usr/local
+
+Name: empatica_e4
+Description: Description of empatica_e4
+Version: 0.0.0
+Cflags: -I${prefix}/include
+Libs: -L${prefix}/lib 
+Requires: rospy std_msgs message_runtime
