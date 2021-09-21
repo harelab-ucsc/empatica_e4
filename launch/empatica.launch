@@ -1,0 +1,3 @@
+<launch>
+  <node name="e4_node" pkg="empatica_e4" type="e4_node.py" output="screen"/>
+</launch>

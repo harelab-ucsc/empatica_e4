@@ -1,6 +1,4 @@
 #Galvanic skin response message
 Header header
+float32 gsr
 
-uint8  status
-uint32 resistance
-uint16 capcount

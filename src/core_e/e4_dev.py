@@ -1,18 +1,17 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 #%% Import Dependencies
 import struct
 import sys
 from bluepy.btle import Peripheral,DefaultDelegate
 import time
 from binascii import unhexlify
-#import rospy
-#from std_msgs.msg import Int32
-#from empatica_e4.msg import SkinTemp #how to import custom msgs
+
 """Questions:
 3. have ros deal with multiple values from the hex. I, using a for loop but i doubt that is best
-4. Likely need things seperated into 2 different files
-5. Shouldnt have a global pub variable
-6. Organizational structure for adding more notifications? (Make fxs in seperate file and import the module?)
+-backlogging time from the most recent call
+1. check sum for acc3d data - wait
+2. aux msg from gsr - wait
+4. heartrate?
 """
 class E4Connect(object):
   def __init__(self, addr, action):
@@ -38,15 +37,28 @@ class E4Connect(object):
     print('Notifications On')
   
 class E4DataActions(object):
-  #Rewrite over this in a class instance to do what you want when the data is received.
+  #Overwrite this class definition to do what you want when the data is received.
   def __init__(self):
     pass
   
+  def onAcc3D(self, acc3D):
+    print("Got Acc:" + str(acc3D))
+  
+  def onGSR(self, gsr):
+    print("Got GSR:" + str(gsr))
+    
+  def onHeartRate(self, heartRate):
+    print("Got Acc:" + str(heartRate))
+    
   def onSkinTemp(self, SkinTemp):
     print("Got SkinTemp:" + str(SkinTemp))
 
 class E4DataStreams(object):
-  SkinTemp = 0x14
+  Acc3D = 0x1c
+  GSR = 0x18
+  HR = 0x14
+  SkinTemp = 0x20
+  
   def __init__(self, cHandle, data, action):
     
     self.cHandle = cHandle
@@ -54,22 +66,52 @@ class E4DataStreams(object):
     self.action = action
     self.readData(self.cHandle,self.data,self.action)
     
-  def readData(self,cHandle, data, actions):
-    #somekind of data check then move on to parseNotification
-    self.parseNotification(cHandle, data, actions)
+  def readData(self,cHandle, data, action):
+    #insert somekind of data check then move on to parseNotification
+    self.parseNotification(cHandle, data, action)
     
   @classmethod
-  def parseNotification(cls, cHandle, data, actions):
-    if cHandle == E4DataStreams.SkinTemp:
-      cls.parseSkinTemp(data,actions)
+  def parseNotification(cls, cHandle, data, action):
+    if cHandle == E4DataStreams.Acc3D:
+      cls.parseAcc3D(data,action)
+    elif cHandle == E4DataStreams.GSR:
+      cls.parseGSR(data,action)
+    elif cHandle == E4DataStreams.HR:
+      cls.parseHeartRate(data,action)
+    elif cHandle == E4DataStreams.SkinTemp:
+      cls.parseSkinTemp(data,action)
     else:
       print('Unknown sensor type')
-    
+  
   @classmethod
-  def parseSkinTemp(cls, data, actions):
+  def parseAcc3D(cls, data, action):
+    acc3D_unpack = struct.unpack('<hhhhhhhhhh',unhexlify(data.hex()))
+    acc3d_data = acc3D_unpack[0:-1]
+    action.onAcc3D(acc3d_data)
+    #add check sum verification check?
+    pass
+  
+  @classmethod
+  def parseGSR(cls, data, action):
+    gsr_unpack = struct.unpack('<hhhhhhhhhh',unhexlify(data.hex()))
+    if gsr_unpack[-2] == 256:
+      #print('Base Message')
+      action.onGSR(gsr_unpack[0:-2])
+    else:
+      print('Aux Message')
+    #check to see which notification we are given via unhex maybe publish a gsr and gsr aux on the ROS side
+    #that would allow us to see them both and play with the outputs. 
+    pass
+  
+  @classmethod
+  def parseHeartRate(cls, data, action):
+    pass
+
+  @classmethod
+  def parseSkinTemp(cls, data, action):
     temp_unpack = struct.unpack('<hhhhhhhhhh',unhexlify(data.hex()))
     temp_data = temp_unpack[0:-2]
-    actions.onSkinTemp(temp_data)
+    action.onSkinTemp(temp_data)
     
 class E4Del(DefaultDelegate):
     def __init__(self,parent,action):

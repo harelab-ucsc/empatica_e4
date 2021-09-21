@@ -1,5 +1,5 @@
+#Heartrate message
 Header header
-uint8  rate
-uint8  quality
-bool   locked
+float32  hr
+
 
