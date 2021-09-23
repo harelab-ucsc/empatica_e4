@@ -20,13 +20,12 @@ class E4DataActions(object):
 
 
 class E4Connect(object):
-    def __init__(self, action, svr_addr='128.114.204.31', deviceID='809CFD', svr_pt=28000, acc=True, bvp=True, gsr=True, tmp=True):
+    def __init__(self, action, svr_addr='128.114.204.31', svr_pt=28000, acc=True, bvp=True, gsr=True, tmp=True):
         
         self.serverAddress = svr_addr
         self.serverPort = svr_pt
-        self.deviceID = deviceID #FF13C6' # 'A02088'
         self.bufferSize = 4096
-        
+
         # SELECT DATA TO STREAM
         self.acc = acc      # 3-axis acceleration
         self.bvp = bvp      # Blood Volume Pulse
@@ -46,10 +45,18 @@ class E4Connect(object):
 
         print("Devices available:")
         s.send("device_list\r\n".encode())
-        response = s.recv(self.bufferSize)
-        print(response.decode("utf-8"))
+        response = s.recv(self.bufferSize).decode("utf-8")
+        print(response)
 
-        print("Connecting to device")
+        # Auto detect device ID from device list
+        try:
+            self.deviceID = response.split('|')[1].split()[0]
+            self.id_sn_lut()
+        except:
+            print('CONNECTION ERROR: No available devices')
+            exit()
+
+        print("Connecting to device {}".format(self.serial_number))
         s.send(("device_connect " + self.deviceID + "\r\n").encode())
         response = s.recv(self.bufferSize)
         print(response.decode("utf-8"))
@@ -133,6 +140,12 @@ class E4Connect(object):
                 print("Socket timeout")
                 self.reconnect()
                 break
+
+    # This function maps device IDs to serial numbers
+    def id_sn_lut(self):
+        lut = {'0612C6':'A03D2C','809CFD':'A02F5C','CE44C0':'A0343B','broken':'A024D8'}
+        self.serial_number = lut[self.deviceID]
+
 
 if __name__ == '__main__':
     try:
