@@ -53,6 +53,7 @@ find_package(catkin REQUIRED COMPONENTS
     GSR.msg
     Heartrate.msg
     SkinTemp.msg
+    EDA.msg
   )
 
 ## Generate services in the 'srv' folder
