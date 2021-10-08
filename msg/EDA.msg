@@ -5,7 +5,7 @@ Header header
 std_msgs/Float32MultiArray  eda_wvf
 
 # p_wvf: phasic waveform
-Float32MultiArray  p_wvf
+std_msgs/Float32MultiArray  p_wvf
 
 # p_mean: phasic mean
 float32  p_mean
@@ -38,7 +38,7 @@ float32 slopes_mean
 float32 p_auc
 
 # t_wvf: tonic waveform
-Float32MultiArray  t_wvf
+std_msgs/Float32MultiArray  t_wvf
 
 # t_mean: tonic mean
 float32  t_mean
