@@ -7,17 +7,16 @@ class E4DataActions(object):
     pass
   
   def onAcc3D(self, acc):
-    print("Got Acc:" + str(acc))
+    print("Got Acc: " + str(acc))
   
   def onGSR(self, gsr):
-    print("Got GSR:" + str(gsr))
+    print("Got GSR: " + str(gsr[0]) + ", " + str(gsr[1]))
     
   def onHeartRate(self, heartRate):
-    print("Got Acc:" + str(heartRate))
+    print("Got HeartRate: " + str(heartRate[0]) + ", " + str(heartRate[1]))
     
-  def onSkinTemp(self, SkinTemp):
-    print("Got SkinTemp:" + str(SkinTemp))
-
+  def onSkinTemp(self, skinTemp):
+    print("Got SkinTemp: " + str(skinTemp[0]) + ", " + str(skinTemp[1]))
 
 class E4Connect(object):
     def __init__(self, action, svr_addr='128.114.204.31', svr_pt=28000, acc=True, bvp=True, gsr=True, tmp=True):
@@ -119,21 +118,27 @@ class E4Connect(object):
                 for i in range(len(samples)-1):
                     stream_type = samples[i].split()[0]
                     if stream_type == "E4_Acc":
-                        data = [int(samples[i].split()[2].replace(',','.')), int(samples[i].split()[3].replace(',','.')), int(samples[i].split()[4].replace(',','.'))]
+                        data = [float(samples[i].split()[1].replace(',','.')), int(samples[i].split()[2].replace(',','.')), int(samples[i].split()[3].replace(',','.')), int(samples[i].split()[4].replace(',','.'))]
                         #print(f'acc data:{data}')
                         self.action.onAcc3D(data)
                     if stream_type == "E4_Bvp":
+                        time_stamp = float(samples[i].split()[1].replace(',','.'))
                         data = float(samples[i].split()[2].replace(',','.'))
+                        bvp = [time_stamp, data]
                         #print(f'bvp data:{data}')
-                        self.action.onHeartRate(data) 
+                        self.action.onHeartRate(bvp) 
                     if stream_type == "E4_Gsr":
+                        time_stamp = float(samples[i].split()[1].replace(',','.'))
                         data = float(samples[i].split()[2].replace(',','.'))
+                        gsr = [time_stamp, data]
                         #print(f'gsr data:{data}')
-                        self.action.onGSR(data)
+                        self.action.onGSR(gsr)
                     if stream_type == "E4_Temperature":
+                        time_stamp = float(samples[i].split()[1].replace(',','.'))
                         data = float(samples[i].split()[2].replace(',','.'))
+                        skinTemp = [time_stamp, data]
                         #print(f'temp data:{data}') 
-                        self.action.onSkinTemp(data)
+                        self.action.onSkinTemp(skinTemp)
                         
                 #time.sleep(1)
             except socket.timeout:
@@ -149,7 +154,8 @@ class E4Connect(object):
 
 if __name__ == '__main__':
     try:
-        e4 = E4Connect(E4DataActions)
+        actions = E4DataActions()
+        e4 = E4Connect(actions)
         e4.connect()
         e4.suscribe_to_data()
         
