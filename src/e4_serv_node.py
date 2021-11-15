@@ -4,6 +4,7 @@ import rospy
 import std_msgs.msg
 from core_e.e4_server_dev import *
 from empatica_e4.msg import *
+import numpy as np
 
 import pyphysio.indicators.TimeDomain as td_ind
 import pyphysio.indicators.FrequencyDomain as fd_ind
@@ -24,6 +25,8 @@ class ROSActions(E4DataActions):
         self.eda_pub = rospy.Publisher('eda', EDA, queue_size=10)
 
         self.eda_wv = []
+        self.hr = []
+        self.st = []
         
         # Preserving Old function for reference
     # def onGSR(self, gsr):
@@ -106,18 +109,54 @@ class ROSActions(E4DataActions):
             self.eda_wv.pop(0)
         
     def onHeartRate(self, hr):
-        msg = Heartrate()
-        msg.header = std_msgs.msg.Header()
-        msg.header.stamp = rospy.Time.from_sec(hr[0])
-        msg.current_hr = hr[1]
-        self.hr_pub.publish(msg) 
+        self.hr.append(hr[1])
+
+        if len(self.hr) >= 1920:
+            ppg_data = self.hr
+
+            ppg_array = std_msgs.msg.Float32MultiArray()
+            ppg_array.layout.data_offset = 0 
+            ppg_array.layout.dim = [std_msgs.msg.MultiArrayDimension()]
+            ppg_array.layout.dim[0].label = "ppg_waveform"
+            ppg_array.layout.dim[0].size = len(ppg_data)
+            ppg_array.layout.dim[0].stride = 1
+
+            ppg_array.data = ppg_data
+
+            msg = Heartrate()
+            msg.header = std_msgs.msg.Header()
+            msg.header.stamp = rospy.Time.from_sec(hr[0])
+            msg.ppg_wvf = ppg_array
+            msg.current_hr = hr[1]
+
+            self.hr_pub.publish(msg) 
+            self.hr.pop(0)
         
     def onSkinTemp(self, st):
-        msg = SkinTemp()
-        msg.header = std_msgs.msg.Header()
-        msg.header.stamp = rospy.Time.from_sec(st[0])
-        msg.current_st = st[1]
-        self.st_pub.publish(msg)
+        self.st.append(st[1])
+
+        if len(self.st) >= 120:
+            st_data = self.st
+
+            st_array = std_msgs.msg.Float32MultiArray()
+            st_array.layout.data_offset = 0 
+            st_array.layout.dim = [std_msgs.msg.MultiArrayDimension()]
+            st_array.layout.dim[0].label = "skin_temp"
+            st_array.layout.dim[0].size = len(st_data)
+            st_array.layout.dim[0].stride = 1
+
+            st_array.data = st_data
+
+            msg = SkinTemp()
+            msg.header = std_msgs.msg.Header()
+            msg.header.stamp = rospy.Time.from_sec(st[0])
+            msg.st_data = st_array
+            msg.current_st = st[1]
+            msg.mean_st = np.mean(self.st)
+            msg.std_st = np.std(self.st)
+
+            self.st_pub.publish(msg)
+            self.st.pop(0)
 
     def onAcc3D(self, acc):
         msg = Acc3D()
